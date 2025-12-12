@@ -5,8 +5,8 @@ from src.f1_data import FPS
 from src.ui_components import LeaderboardComponent, WeatherComponent, LegendComponent, DriverInfoComponent, build_track_from_example_lap
 
 
-SCREEN_WIDTH = 1600
-SCREEN_HEIGHT = 900
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1200
 SCREEN_TITLE = "F1 Replay System"
 
 class F1RaceReplayWindow(arcade.Window):
