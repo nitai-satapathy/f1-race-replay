@@ -2,7 +2,7 @@ import arcade
 import threading
 import time
 import numpy as np
-from src.ui_components import build_track_from_example_lap, LapTimeLeaderboardComponent, QualifyingSegmentSelectorComponent
+from src.ui_components import build_track_from_example_lap, LapTimeLeaderboardComponent, QualifyingSegmentSelectorComponent, RaceControlsComponent
 from src.f1_data import get_driver_quali_telemetry
 from src.f1_data import FPS
 from src.lib.time import format_time
@@ -25,6 +25,10 @@ class QualifyingReplay(arcade.Window):
         self.data = data
         self.leaderboard = LapTimeLeaderboardComponent(
             x=LEFT_MARGIN,
+        )
+        self.race_controls_comp = RaceControlsComponent(
+            center_x= self.width // 2 + 100,
+            center_y= 40
         )
         self.leaderboard.set_entries(self.data.get("results", []))
         self.frames = []
@@ -552,6 +556,20 @@ class QualifyingReplay(arcade.Window):
 
         self.leaderboard.draw(self)
         self.qualifying_segment_selector_modal.draw(self)
+        
+        # Show race controls only when telemetry is loaded (driver + session selected)
+        if self.chart_active and self.loaded_telemetry:
+            self.race_controls_comp.draw(self)
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
+        """Pass mouse motion events to UI components."""
+        self.race_controls_comp.on_mouse_motion(self, x, y, dx, dy)
+    
+    def on_resize(self, width: int, height: int):
+        """Handle the window being resized."""
+        super().on_resize(width, height)
+        self.update_scaling(width, height)
+        self.race_controls_comp.on_resize(self)
 
     def _interpolate_points(self, xs, ys, interp_points=2000):
         t_old = np.linspace(0, 1, len(xs))
@@ -600,33 +618,44 @@ class QualifyingReplay(arcade.Window):
 
         # Fallback: let the leaderboard handle the click (select drivers)
         self.leaderboard.on_mouse_press(self, x, y, button, modifiers)
+        self.race_controls_comp.on_mouse_press(self, x, y, button, modifiers)
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.SPACE:
             self.paused = not self.paused
+            self.race_controls_comp.flash_button('play_pause')
         elif symbol == arcade.key.RIGHT:
             # step forward by 10 frames (keep integer)
             self.frame_index = int(min(self.frame_index + 10, max(0, self.n_frames - 1)))
+            self.race_controls_comp.flash_button('forward')
         elif symbol == arcade.key.LEFT:
             # step backward by 10 frames (keep integer)
             self.frame_index = int(max(self.frame_index - 10, 0))
+            self.race_controls_comp.flash_button('rewind')
         elif symbol == arcade.key.UP:
             self.playback_speed *= 2.0
+            self.race_controls_comp.flash_button('speed_increase')
         elif symbol == arcade.key.DOWN:
             self.playback_speed = max(0.1, self.playback_speed / 2.0)
+            self.race_controls_comp.flash_button('speed_decrease')
         elif symbol == arcade.key.KEY_1:
             self.playback_speed = 0.5
+            self.race_controls_comp.flash_button('speed_decrease')
         elif symbol == arcade.key.KEY_2:
             self.playback_speed = 1.0
+            self.race_controls_comp.flash_button('speed_decrease')
         elif symbol == arcade.key.KEY_3:
             self.playback_speed = 2.0
+            self.race_controls_comp.flash_button('speed_increase')
         elif symbol == arcade.key.KEY_4:
             self.playback_speed = 4.0
+            self.race_controls_comp.flash_button('speed_increase')
         elif symbol == arcade.key.R:
             self.frame_index = 0
             self.play_time = self.play_start_t
             self.playback_speed = 1.0
             self.paused = True
+            self.race_controls_comp.flash_button('rewind')
 
     # New methods: start telemetry load in background
     def load_driver_telemetry(self, driver_code: str, segment_name: str):
@@ -762,6 +791,7 @@ class QualifyingReplay(arcade.Window):
             return
         if self.paused:
             return
+        self.race_controls_comp.on_update(delta_time)
         # advance play_time by delta_time scaled by playback_speed
         self.play_time += delta_time * self.playback_speed
         # compute integer frame index from cached times (fast, robust)

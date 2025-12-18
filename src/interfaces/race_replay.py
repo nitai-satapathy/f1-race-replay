@@ -425,6 +425,8 @@ class F1RaceReplayWindow(arcade.Window):
         self.progress_bar_comp.draw_overlays(self)
                     
     def on_update(self, delta_time: float):
+        # Update race controls component (for flash animations)
+        self.race_controls_comp.on_update(delta_time)
         if self.paused:
             return
         self.frame_index += delta_time * FPS * self.playback_speed
@@ -434,25 +436,35 @@ class F1RaceReplayWindow(arcade.Window):
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.SPACE:
             self.paused = not self.paused
+            self.race_controls_comp.flash_button('play_pause')
         elif symbol == arcade.key.RIGHT:
             self.frame_index = min(self.frame_index + 10.0, self.n_frames - 1)
+            self.race_controls_comp.flash_button('forward')
         elif symbol == arcade.key.LEFT:
             self.frame_index = max(self.frame_index - 10.0, 0.0)
+            self.race_controls_comp.flash_button('rewind')
         elif symbol == arcade.key.UP:
             self.playback_speed *= 2.0
+            self.race_controls_comp.flash_button('speed_increase')
         elif symbol == arcade.key.DOWN:
             self.playback_speed = max(0.1, self.playback_speed / 2.0)
+            self.race_controls_comp.flash_button('speed_decrease')
         elif symbol == arcade.key.KEY_1:
             self.playback_speed = 0.5
+            self.race_controls_comp.flash_button('speed_decrease')
         elif symbol == arcade.key.KEY_2:
             self.playback_speed = 1.0
+            self.race_controls_comp.flash_button('speed_decrease')
         elif symbol == arcade.key.KEY_3:
             self.playback_speed = 2.0
+            self.race_controls_comp.flash_button('speed_increase')
         elif symbol == arcade.key.KEY_4:
             self.playback_speed = 4.0
+            self.race_controls_comp.flash_button('speed_increase')
         elif symbol == arcade.key.R:
             self.frame_index = 0.0
             self.playback_speed = 1.0
+            self.race_controls_comp.flash_button('rewind')
         elif symbol == arcade.key.B:
             self.progress_bar_comp.toggle_visibility() # toggle progress bar visibility
 

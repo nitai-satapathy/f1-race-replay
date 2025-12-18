@@ -960,7 +960,11 @@ class RaceControlsComponent(BaseComponent):
         self.speed_decrease_rect = None
         
         # Hover state
-        self.hover_button = None  # 'rewind', 'play_pause', or 'forward'
+        self.hover_button = None  # 'rewind/forward', 'play/pause', 'speed_increase', 'speed_decrease'
+        # Flash feedback state for keyboard shortcuts
+        self._flash_button = None
+        self._flash_timer = 0.0
+        self._flash_duration = 0.3  # seconds
 
         _controls_folder = os.path.join("images", "controls")
         if os.path.exists(_controls_folder):
@@ -977,6 +981,18 @@ class RaceControlsComponent(BaseComponent):
         self.button_spacing = window.width * (70 / 1920)
         self.speed_container_offset = window.width * (200 / 1920)
         self._hide_speed_text = window.width < 1000
+    
+    def on_update(self, delta_time: float):
+        """Update flash timer for keyboard feedback animation."""
+        if self._flash_timer > 0:
+            self._flash_timer = max(0, self._flash_timer - delta_time)
+            if self._flash_timer == 0:
+                self._flash_button = None
+    
+    def flash_button(self, button_name: str):
+        """Trigger a visual flash effect for a button (used for keyboard feedback)."""
+        self._flash_button = button_name
+        self._flash_timer = self._flash_duration
 
     def draw(self, window):
         """Draw the three playback control buttons."""
@@ -998,9 +1014,20 @@ class RaceControlsComponent(BaseComponent):
 
         self._draw_speed_comp(forward_x + self.speed_container_offset, self.center_y, getattr(window, 'playback_speed', 1.0))
 
+    def draw_hover_effect(self, button_name: str, x: float, y: float, radius_offset: int = 2, border_width: int = 4):
+        """Draw hover outline effect for a button if it's currently hovered."""
+        if self.hover_button == button_name and getattr(self, f"{button_name}_rect", None):
+            arcade.draw_circle_outline(x, y, self.button_size // 2 + radius_offset, arcade.color.WHITE, border_width)
+        
+        # Show flash effect for keyboard feedback
+        if self._flash_button == button_name and self._flash_timer > 0:
+            # Pulsing ring effect based on timer
+            alpha = int(255 * (self._flash_timer / self._flash_duration))
+            flash_color = (*arcade.color.DIM_GRAY[:3], alpha)
+            arcade.draw_circle_outline(x, y, self.button_size // 2 + radius_offset + 2, flash_color, border_width + 1)
+
     def _draw_play_icon(self, x: float, y: float):
-        if self.hover_button == 'play_pause' and self.play_pause_rect:
-            arcade.draw_circle_outline(x, self.center_y, self.button_size // 2 + 2, arcade.color.WHITE, 4)
+        self.draw_hover_effect('play_pause', x, self.center_y)
         if 'play' in self._control_textures:
             texture = self._control_textures['play']
             rect = arcade.XYWH(x, y, self.button_size, self.button_size)
@@ -1013,8 +1040,7 @@ class RaceControlsComponent(BaseComponent):
                     alpha=255
                 )
     def _draw_pause_icon(self, x: float, y: float):
-        if self.hover_button == 'play_pause' and self.play_pause_rect:
-            arcade.draw_circle_outline(x, self.center_y, self.button_size // 2 + 2, arcade.color.WHITE, 4)
+        self.draw_hover_effect('play_pause', x, self.center_y)
         if 'pause' in self._control_textures:
             texture = self._control_textures['pause']
             rect = arcade.XYWH(x, y, self.button_size, self.button_size)
@@ -1027,9 +1053,7 @@ class RaceControlsComponent(BaseComponent):
                     alpha=255
                 )
     def _draw_forward_icon(self, x: float, y: float):
-        if self.hover_button == 'forward' and self.forward_rect:
-            arcade.draw_circle_outline(x, self.center_y, self.button_size // 2 + 2, arcade.color.WHITE, 4)
-        
+        self.draw_hover_effect('forward', x, self.center_y)
         if 'rewind' in self._control_textures:
             texture = self._control_textures['rewind']
             rect = arcade.XYWH(x, y, self.button_size, self.button_size)
@@ -1042,9 +1066,7 @@ class RaceControlsComponent(BaseComponent):
                     alpha=255
                 )
     def _draw_rewind_icon(self, x: float, y: float):
-        if self.hover_button == 'rewind' and self.rewind_rect:
-            arcade.draw_circle_outline(x, self.center_y, self.button_size // 2 + 2, arcade.color.WHITE, 4)
-
+        self.draw_hover_effect('rewind', x, self.center_y)
         if 'rewind' in self._control_textures:
             texture = self._control_textures['rewind']
             rect = arcade.XYWH(x, y, self.button_size, self.button_size)
@@ -1108,10 +1130,8 @@ class RaceControlsComponent(BaseComponent):
                 )
 
             # Draw hover highlights for speed buttons
-            if self.hover_button == 'speed_increase':
-                arcade.draw_circle_outline(rect_plus.center_x, rect_plus.center_y, self.button_size // 2 + 1, arcade.color.WHITE, 2)
-            if self.hover_button == 'speed_decrease':
-                arcade.draw_circle_outline(rect_minus.center_x, rect_minus.center_y, self.button_size // 2 + 1, arcade.color.WHITE, 2)
+            self.draw_hover_effect('speed_increase', rect_plus.center_x, rect_plus.center_y, radius_offset=1, border_width=2)
+            self.draw_hover_effect('speed_decrease', rect_minus.center_x, rect_minus.center_y, radius_offset=1, border_width=2)
             
 
     def on_mouse_motion(self, window, x: float, y: float, dx: float, dy: float):
