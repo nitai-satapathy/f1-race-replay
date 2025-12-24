@@ -75,31 +75,39 @@ class LegendComponent(BaseComponent):
         if left <= x <= right and bottom <= y <= top:
             popup = getattr(window, "controls_popup_comp", None)
             if popup:
-                
-                if popup.visible and popup.cx is None and popup.cy is None:
+                # popup anchored to bottom left, small margin (20px)
+                margin_x = 20
+                margin_y = 20
+                left_pos = float(margin_x)
+                top_pos = float(margin_y + popup.height)
+                desired_cx = left_pos + popup.width / 2
+                desired_cy = top_pos - popup.height / 2
+                if popup.visible and popup.cx == desired_cx and popup.cy == desired_cy:
                     popup.hide()
                 else:
-                    popup.show_center()
+                    popup.show_over(left_pos, top_pos)
             return True
         return False
     
     def draw(self, window):
+        # Skip rendering entirely if hidden
         
         if not self._visible:
             return
         for i, lines in enumerate(self.lines):
-            line = lines[0] if isinstance(lines, tuple) else lines
-            brackets = lines[1] if isinstance(lines, tuple) and len(lines) > 2 else None
-            icon_keys = lines[2] if isinstance(lines, tuple) and len(lines) > 2 else None
+            line = lines[0] if isinstance(lines, tuple) else lines # main text
+            brackets = lines[1] if isinstance(lines, tuple) and len(lines) > 2 else None # brackets only if icons exist
+            icon_keys = lines[2] if isinstance(lines, tuple) and len(lines) > 2 else None # icon keys
         
             icon_size = 14
+            # Draw icons if any
             
             if icon_keys:
                 control_icon_x = self.x + 12
                 for key in icon_keys:
                     icon_texture = self._control_icons_textures.get(key)
                     if icon_texture:
-                        control_icon_y = self.y - (i * 25) + 5
+                        control_icon_y = self.y - (i * 25) + 5 # slight vertical offset
                         rect = arcade.XYWH(control_icon_x, control_icon_y, icon_size, icon_size)
                         arcade.draw_texture_rect(
                             rect = rect,
@@ -107,7 +115,7 @@ class LegendComponent(BaseComponent):
                             angle = 0,
                             alpha = 255
                         )
-                        control_icon_x += icon_size + 6
+                        control_icon_x += icon_size + 6 # spacing between icons
                         
             if brackets:
                 for j in range(len(brackets)):
@@ -119,6 +127,7 @@ class LegendComponent(BaseComponent):
                     self._text.y = self.y - (i * 25)
                     self._text.draw()
             
+            # Draw the text line
             self._text.text = line
             self._text.x = self.x + (60 if icon_keys else 0)
             base_y = self.y - (i * 25)
