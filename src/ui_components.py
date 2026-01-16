@@ -1506,8 +1506,7 @@ class QualifyingLapTimeComponent(BaseComponent):
                 cumulative_fastest_time += fastest_sector_time if fastest_sector_time is not None else 0
                 delta_sector_time = sector_time - fastest_sector_time if sector_time is not None and fastest_sector_time is not None else None
             
-            formatted_fastest_sector_time = format_time(cumulative_fastest_time) if sector_idx == 2 else cumulative_fastest_time
-
+            formatted_fastest_sector_time = format_time(cumulative_fastest_time)
             text_color = arcade.color.ANTI_FLASH_WHITE
             
             # Calculate elapsed time in current sector
