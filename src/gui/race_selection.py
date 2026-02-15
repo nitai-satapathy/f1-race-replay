@@ -368,10 +368,6 @@ class RaceSelectionWindow(QMainWindow):
                         except Exception:
                             pass
                         timer.stop()
-
-                        #Minimize RaceSelectionWindow
-                        self.showMinimized()
-                        
                         try:
                             os.remove(ready_path)
                         except Exception:
